@@ -16,28 +16,65 @@
   <h3>Contents</h3>
 
   <ul>
-  {% for headers, contests in election.contests_with_headers() %}
-    {% for level, header in headers %}
-      {% set header_id = header.ballot_title|to_element_id %}
-      <li>
-        <a href="{{ header_id|to_fragment }}">{{ header.ballot_title|translate }}</a>
-      {%- if not loop.last %}
-      </li>
-      {% endif -%}
-    {% endfor %}
-      <ul>
+    {# TODO: use election.turnout.ballot_title #}
+    <li><a href="#turnout">Total registration and turnout</a></li>
+    {% for headers, contests in election.contests_with_headers() %}
+      {% for level, header in headers %}
+        {% set header_id = header.ballot_title|to_element_id %}
         <li>
-          {% for contest in contests %}
-            {% set contest_id = contest.contest_name|to_element_id %}
-            <a href="{{ contest_id|to_fragment }}">
-            {# Prevent contest names from breaking across lines in the table of contents. #}
-            {{ contest.contest_name|translate|escape|nobreak|safe }}</a>{%- if not loop.last %}&nbsp;●{% endif -%}
-          {% endfor %}
+          <a href="{{ header_id|to_fragment }}">{{ header.ballot_title|translate }}</a>
+        {%- if not loop.last %}
         </li>
-      </ul>
-    </li>
-  {% endfor %}
+        {% endif -%}
+      {% endfor %}
+        <ul>
+          <li>
+            {% for contest in contests %}
+              {% set contest_id = contest.contest_name|to_element_id %}
+              <a href="{{ contest_id|to_fragment }}">
+              {# Prevent contest names from breaking across lines in the table of contents. #}
+              {{ contest.contest_name|translate|escape|nobreak|safe }}</a>{%- if not loop.last %}&nbsp;●{% endif -%}
+            {% endfor %}
+          </li>
+        </ul>
+      </li>
+    {% endfor %}
   </ul>
+
+  <h3 id="turnout">Total registration and turnout</h3>
+  <pre>{{ election.turnout.__dict__|pprint(true) }}
+
+    {{ election.turnout|pprint(true) }}
+
+    {% for group in election.turnout.reporting_groups %}
+      {{ group.voting_group.__dict__|pprint(true) }}
+    {% endfor %}
+
+    {% for id in election.turnout.all_voting_groups_by_id %}
+      {{election.turnout.all_voting_groups_by_id[id].__dict__|pprint(true)}}
+    {% endfor %}
+  </pre>
+  <p>
+    {{ election.turnout.precincts_reporting }} of {{ election.turnout.total_precincts}} Precincts Reporting
+    ({{ election.turnout.precincts_reporting|format_percent2(election.turnout.total_precincts) }})
+  </p>
+  <table class="table summary-table">
+    <tr>
+      <th></th>
+      {% for vg in election.turnout.voting_groups_from_idlist() %}
+        <th>{{ vg.heading }}</th>
+      {% endfor %}
+    </tr>
+    {% for result_stat in election.turnout.result_stats %}
+      <tr>
+        <td class="text-cell">{{ result_stat.heading }}</td>
+        {% for vg in election.turnout.voting_groups_from_idlist() %}
+	  {# FIXME the line below this one crashes #}
+          <td>{{ election.turnout.summary_results(result_stat, vg.id)[0]|format_number }}</td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </table>
 
   {% with %}
     {% for headers, contests in election.contests_with_headers() %}
